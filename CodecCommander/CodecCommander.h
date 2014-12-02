@@ -33,9 +33,6 @@
 #include <IOKit/IOTimerEventSource.h>
 #include <IOKit/IODeviceTreeSupport.h>
 
-#include  "CCHIDKeyboardDevice.h"
-
-
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 // define & enumerate power states
@@ -47,6 +44,8 @@ enum
 	kPowerStateCount
 };
 
+OSString* getManufacturerNameFromOEMName(OSString *name);
+
 class CodecCommander : public IOService
 {
     typedef IOService super;
@@ -55,13 +54,9 @@ class CodecCommander : public IOService
 public:
     // standart IOKit methods
 	virtual bool init(OSDictionary *dictionary = 0);
-    virtual IOService *probe(IOService *provider, SInt32 *score);
     virtual bool start(IOService *provider);
 	virtual void stop(IOService *provider);
     virtual void free(void);
-    
-    // generate a stream
-    void createAudioStream ();
     
     // workloop parameters
     bool startWorkLoop(IOService *provider);
@@ -69,35 +64,32 @@ public:
     
     //power management event
     virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
-
-private:
-    // get config dictionary by parsing plist
-    static OSDictionary* makeConfigurationNode(OSDictionary* list, OSString* model = 0);
     
+    // get confing and make config dictionary by parsing plist
+    static OSDictionary* getConfigurationNode(OSDictionary* list, OSString* model = 0);
+    static OSDictionary* makeConfigurationNode(OSDictionary* list, OSString* model = 0);
+
+private:   
     // set plist dictionary parameters
     void setParamPropertiesGated(OSDictionary* dict);
     
 protected:
-    // parse audio engine state and codec power state from ioreg
+    // parse codec power state from ioreg
     void parseCodecPowerState();
-    void parseAudioEngineState();
     
     // handle codec verb command and read response
     void setStatus(UInt32 cmd);
     void getStatus(UInt32 cmd);
     void clearIRV();
     
-    // get and set the state of EAPD on outputs
-    void getOutputs();
-    void setOutputs();
+    // set the state of EAPD on outputs
+    void setOutputs(UInt8 logicLevel);
     
-    void simulateHedphoneJack();
+    // reset codec
+    void performCodecReset ();
     
     IOWorkLoop*			fWorkLoop;		// our workloop
     IOTimerEventSource* fTimer;	// used to simulate capture hardware
-    
-    //virtual keyboard
-    CCHIDKeyboardDevice * _keyboardDevice;
 };
 
 #endif // __CodecCommander__
